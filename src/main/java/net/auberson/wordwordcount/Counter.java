@@ -35,7 +35,8 @@ public class Counter {
 	final List<Pattern> ignore = new ArrayList<Pattern>();
 	final List<String> ignoreStyle = new ArrayList<String>();
 
-	String startAfter, stopBefore;
+	final List<String> startAfter = new ArrayList<String>();
+	final List<String> stopBefore = new ArrayList<String>();
 	boolean debug;
 
 	public static final Pattern CITATIONS = Pattern.compile("\\([^\\)]*?[12][0-9]{3}.*?\\)");
@@ -67,11 +68,11 @@ public class Counter {
 	}
 
 	private void startAfter(String tocItem) {
-		startAfter = tocItem;
+		startAfter.add(tocItem.trim());
 	}
 
 	private void stopBefore(String tocItem) {
-		stopBefore = tocItem;
+		stopBefore.add(tocItem.trim());
 	}
 
 	private void debug() {
@@ -99,12 +100,17 @@ public class Counter {
 
 			// Check for starting and ending elements of the outline
 			if (isOutline(paragraph)) {
-				if (paragraph.getText().trim().equalsIgnoreCase(startAfter)) {
-					thisPartCounts = true;
+				for (String tocItem : startAfter) {
+					if (paragraph.getText().trim().equalsIgnoreCase(tocItem)) {
+						thisPartCounts = true;
+					}
 				}
-				if (paragraph.getText().trim().equalsIgnoreCase(stopBefore)) {
-					thisPartCounts = false;
+				for (String tocItem : stopBefore) {
+					if (paragraph.getText().trim().equalsIgnoreCase(tocItem)) {
+						thisPartCounts = false;
+					}
 				}
+
 			}
 
 			// Don't count if we haven't found the starting Outline element.
@@ -253,6 +259,7 @@ public class Counter {
 		counter.ignoreStyle("DXCPictures");
 		counter.startAfter("Introduction");
 		counter.stopBefore("Bibliography");
+		counter.stopBefore("List of Abbreviations");
 
 		System.out.println("Styles used:");
 		System.out.println(counter.getUsedStyles());
