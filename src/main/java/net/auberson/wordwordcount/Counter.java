@@ -140,6 +140,12 @@ public class Counter {
 
 			// Count if we get until here
 			count += getWordCount(paragraph);
+			
+			String input = paragraph.getText();
+			for (Pattern pattern : ignore) {
+				input = pattern.matcher(input).replaceAll("");
+			}
+			System.err.println(input);
 		}
 		return Arrays.asList(count, ignoredCount, textboxCount, count + ignoredCount + textboxCount);
 	}
@@ -255,11 +261,13 @@ public class Counter {
 	public static void main(String[] args) throws IOException {
 		Counter counter = new Counter(new File(args[0]));
 		counter.ignore(Counter.CITATIONS);
-		counter.ignoreStyle("DXCCaptionText");
-		counter.ignoreStyle("DXCPictures");
+		counter.ignoreStyle("Heading2");
+		counter.ignoreStyle("Heading3");
+		counter.ignoreStyle("Picture");
+		counter.ignoreStyle("PictureCaptionText");
 		counter.startAfter("Introduction");
 		counter.stopBefore("Bibliography");
-		counter.stopBefore("List of Abbreviations");
+		counter.stopBefore("Appendix A: Glossary of terms");
 
 		System.out.println("Styles used:");
 		System.out.println(counter.getUsedStyles());
