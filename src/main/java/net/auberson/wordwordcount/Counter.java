@@ -21,6 +21,7 @@ import org.apache.xmlbeans.XmlCursor;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDecimalNumber;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTR;
 
 import com.google.common.base.CharMatcher;
@@ -207,7 +208,11 @@ public class Counter {
 			System.err.println("Style not found: " + styleName);
 			return null;
 		}
-		CTDecimalNumber outlineLvl = style.getCTStyle().getPPr().getOutlineLvl();
+		CTPPr ppr = style.getCTStyle().getPPr();
+		if (ppr == null) {
+			return null;
+		}
+		CTDecimalNumber outlineLvl = ppr.getOutlineLvl();
 		if (outlineLvl == null) {
 			return null;
 		}
