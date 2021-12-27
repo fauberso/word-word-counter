@@ -1,22 +1,8 @@
 package net.auberson.wordwordcount;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.poi.xwpf.usermodel.IRunBody;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.apache.poi.xwpf.usermodel.XWPFRun;
-import org.apache.poi.xwpf.usermodel.XWPFStyle;
-import org.apache.poi.xwpf.usermodel.XWPFStyles;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Splitter;
+import org.apache.poi.xwpf.usermodel.*;
 import org.apache.xmlbeans.XmlCursor;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
@@ -24,8 +10,12 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDecimalNumber;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTR;
 
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Splitter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Counter {
 
@@ -38,6 +28,8 @@ public class Counter {
 
     final List<String> startAfter = new ArrayList<String>();
     final List<String> stopBefore = new ArrayList<String>();
+
+    final Map<String, Integer> detailedCount = new LinkedHashMap<String, Integer>();
     boolean debug;
 
     public static final Pattern CITATIONS = Pattern.compile("\\([^\\)]*?[12][0-9]{3}.*?\\)");
@@ -94,6 +86,7 @@ public class Counter {
         int textboxCount = 0;
 
         boolean thisPartCounts = (startAfter == null ? true : false);
+        String thisParagraphName = "";
 
         paragraphs:
         for (XWPFParagraph paragraph : doc.getParagraphs()) {
@@ -101,7 +94,11 @@ public class Counter {
             textboxCount += getWordCountInTextboxes(paragraph);
 
             // Check for starting and ending elements of the outline
-            if (isOutline(paragraph)) {
+            Integer outlineLevel = getOutlineLevel(paragraph);
+            if (outlineLevel != null) {
+                if (outlineLevel.intValue() == 0){
+                    thisParagraphName = paragraph.getText();
+                }
                 for (String tocItem : startAfter) {
                     if (paragraph.getText().trim().equalsIgnoreCase(tocItem)) {
                         thisPartCounts = true;
@@ -141,7 +138,14 @@ public class Counter {
             }
 
             // Count if we get until here
-            count += getWordCount(paragraph);
+            final int wordCount = getWordCount(paragraph);
+            count += wordCount;
+
+            if (detailedCount.containsKey(thisParagraphName)) {
+                detailedCount.put(thisParagraphName, Integer.valueOf(detailedCount.get(thisParagraphName).intValue()+wordCount));
+            } else {
+                detailedCount.put(thisParagraphName, Integer.valueOf(wordCount));
+            }
 
             String input = paragraph.getText();
             for (Pattern pattern : ignore) {
@@ -271,7 +275,7 @@ public class Counter {
         counter.ignoreStyle("Picture");
         counter.ignoreStyle("PictureCaptionText");
         counter.startAfter("Introduction");
-        counter.stopBefore("Appendix A: Bibliography");
+        counter.stopBefore("Bibliography");
 
         System.out.println("Styles used:");
         System.out.println(counter.getUsedStyles());
@@ -280,11 +284,17 @@ public class Counter {
         System.out.println(counter.getOutline());
         System.out.println();
 
-        System.out.println("Ignored sections:");
         counter.debug();
         List<Integer> wordCount = counter.getWordCount();
+
         System.out.println();
 
+        System.out.println("Sections:");
+        for (Map.Entry<String, Integer> entry : counter.detailedCount.entrySet()) {
+            System.out.println("  " + entry.getKey().trim()+": "+entry.getValue());
+        }
+
+        System.out.println();
         System.out.println("Word Count [counted, ignored, textboxes, total]:");
         System.out.println(wordCount);
     }
